@@ -37,7 +37,7 @@ unsigned int screenWidth = 1200;
 unsigned int screenHeight = 720;
 
 // Camera settings
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 float lastX = screenWidth / 2.0f;
 float lastY = screenHeight / 2.0f;
 bool firstMouse = true;
