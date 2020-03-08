@@ -45,7 +45,9 @@ ipch
 LightData.txt
 LightDataExample.txt
 ModelData.txt
+ModelDataFull.txt
 glad.c
 stb_image.h
 models/
+/CourseWork3/textures/
 skybox/

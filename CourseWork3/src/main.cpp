@@ -27,10 +27,13 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window, LightManager& lightManager);
 void renderCube();
+void renderSeminarCube();
+void renderSeminarPyramid();
 void renderPyramid();
 void renderQuad();
 void renderSkybox(unsigned int cubemapTexture);
 unsigned int loadCubemap(std::vector<std::string> faces);
+unsigned int loadTexture(char const * path);
 
 // Screen settings
 unsigned int screenWidth = 1200;
@@ -107,6 +110,7 @@ int main()
     Shader shader("shaders/pbr.vert", "shaders/pbr.frag");   
     Shader shaderLightBox("shaders/deferred_light_box.vert", "shaders/deferred_light_box.frag");
     Shader skyboxShader("shaders/skybox.vert", "shaders/skybox.frag");
+    Shader basicLighting("shaders/basic_lighting.vert", "shaders/basic_lighting.frag");
     
     // Load scene   
     SceneLoader sceneLoader;
@@ -161,8 +165,12 @@ int main()
         shader.setFloat("spotLights[" + to_string(i) + "].quadratic", spotLights[i].getQuadratic());
         shader.setFloat("spotLights[" + to_string(i) + "].cutOff", glm::cos(spotLights[i].getCutOffInRadians()));
         shader.setFloat("spotLights[" + to_string(i) + "].outerCutOff", glm::cos(spotLights[i].getOuterCutOffInRadians()));
-    }    
+    }
 
+    basicLighting.use();
+    basicLighting.setInt("diffuse", 0);
+
+    glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     // Render loop    
     while (!glfwWindowShouldClose(window))
     {
@@ -197,7 +205,7 @@ int main()
             shader.setMat3("normalMatrix", normalMatrix);
 
             objects[i].getModel()->Draw(shader);
-        }                
+        }            
 
         // Update point lights positions
         for (PointLights::size_type i = 0; i < pointLights.size(); ++i)                              
@@ -207,6 +215,18 @@ int main()
         for (SpotLights::size_type i = 0; i < spotLights.size(); ++i)        
             shader.setVec3("spotLights[" + to_string(i) + "].position", spotLights[i].getPosition());            
         
+        basicLighting.use();
+        basicLighting.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+        basicLighting.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        basicLighting.setVec3("lightPos", lightPos);
+        basicLighting.setVec3("viewPos", camera.Position);
+        basicLighting.setMat4("projection", projection);
+        basicLighting.setMat4("view", view);
+        glm::mat4 myModel = glm::mat4(1.0f);
+        basicLighting.setMat4("model", myModel);
+        //renderSeminarCube();
+		renderSeminarPyramid();
+
         // Render lights on top of scene        
         shaderLightBox.use();            
         shaderLightBox.setMat4("projection", projection);
@@ -221,6 +241,12 @@ int main()
             shaderLightBox.setVec3("lightColor", pointLights[i].getColor());
             renderCube();
         }
+		glm::mat4 model = glm::mat4();
+		model = glm::translate(model, glm::vec3(lightPos));
+		model = glm::scale(model, glm::vec3(0.125f));
+		shaderLightBox.setMat4("model", model);
+		shaderLightBox.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		renderCube();
 
         for (unsigned int i = 0; i < spotLights.size(); ++i)
         {
@@ -453,6 +479,245 @@ void renderPyramid()
     glBindVertexArray(0);
 }
 
+unsigned int seminarPyramidVAO = 0;
+unsigned int seminarPyramidVBO = 0;
+unsigned int seminarPyramidTexture = 0;
+
+void renderSeminarPyramid()
+{
+	if (seminarPyramidVAO == 0)
+	{
+		float vertices[] =
+		{
+			// View from up
+			// 4---------3
+			// | \     / |
+			// |  \   /  |
+			// |    5    |
+			// |  /   \  |
+			// | /     \ |
+			// 1---------2
+			
+			// front face	        // normals               // texture coordinates
+			 0.5f, -0.5f,  0.5f, /**/  0.0f,  0.7f,  0.7f, /**/ 1.0f, 0.0f, //2
+			 0.0f,  0.5f,  0.0f, /**/  0.0f,  0.7f,  0.7f, /**/ 0.5f, 1.0f, //5
+			-0.5f, -0.5f,  0.5f, /**/  0.0f,  0.7f,  0.7f, /**/ 0.0f, 0.0f, //1              
+			// rigth face		 /**/  		 	   		   /**/
+			 0.5f, -0.5f, -0.5f, /**/  0.7f,  0.7f,  0.0f, /**/ 1.0f, 0.0f, //3
+			 0.0f,  0.5f,  0.0f, /**/  0.7f,  0.7f,  0.0f, /**/ 0.5f, 1.0f, //5
+			 0.5f, -0.5f,  0.5f, /**/  0.7f,  0.7f,  0.0f, /**/ 0.0f, 0.0f,
+			// left face		 /**/			 	   	   /**/
+			-0.5f, -0.5f,  0.5f, /**/ -0.7f,  0.7f,  0.0f, /**/ 1.0f, 0.0f,
+			 0.0f,  0.5f,  0.0f, /**/ -0.7f,  0.7f,  0.0f, /**/ 0.5f, 1.0f,
+			-0.5f, -0.5f, -0.5f, /**/ -0.7f,  0.7f,  0.0f, /**/ 0.0f, 0.0f, //4
+			// back face		 /**/			 		   /**/
+			-0.5f, -0.5f, -0.5f, /**/  0.0f,  0.7f, -0.7f, /**/ 1.0f, 0.0f,
+			 0.0f,  0.5f,  0.0f, /**/  0.0f,  0.7f, -0.7f, /**/ 0.5f, 1.0f,
+			 0.5f, -0.5f, -0.5f, /**/  0.0f,  0.7f, -0.7f, /**/ 0.0f, 0.0f,
+			// bottom face		 /**/					   /**/
+			 0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f, 0.0f, //3
+			 0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f, 1.0f, //2
+			-0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f, 1.0f, //1
+								 /**/					   /**/
+			 0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f, 0.0f, //3
+			-0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f, 1.0f, //1
+			-0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f, 0.0f, //4
+		};
+
+		glGenVertexArrays(1, &seminarPyramidVAO);
+		glGenBuffers(1, &seminarPyramidVBO);
+		glBindVertexArray(seminarPyramidVAO);
+		// fill buffer
+		glBindBuffer(GL_ARRAY_BUFFER, seminarPyramidVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
+
+		const int stride = 8;
+
+		// position attribute
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		// normal attribute
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+		// texture attribute
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+
+		seminarPyramidTexture = loadTexture("textures/pyramid/mason1.jpg");
+	}
+	glBindVertexArray(seminarPyramidVAO);
+	glBindTexture(GL_TEXTURE_2D, seminarPyramidTexture);
+	glDrawArrays(GL_TRIANGLES, 0, 18);
+	glBindVertexArray(0);
+}
+
+unsigned int seminarCubeVAO = 0;
+unsigned int seminarCubeVBO = 0;
+unsigned int seminarCubeTexture = 0;
+
+void renderSeminarCube()
+{
+    if (seminarCubeVAO == 0)
+    {
+        float vertices[] = 
+		{
+			 // coordinates	        // normals               // texture coordinates
+             0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  1.0f,
+             0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  1.0f,
+             0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  1.0f,
+            					 /**/ 					   /**/
+            -0.5f, -0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 0.0f,  0.0f,
+             0.5f, -0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 1.0f,  0.0f,
+             0.5f,  0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 1.0f,  1.0f,
+             0.5f,  0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 1.0f,  1.0f,
+            -0.5f,  0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 0.0f,  1.0f,
+            -0.5f, -0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 0.0f,  0.0f,
+								 /**/ 					   /**/
+            -0.5f,  0.5f,  0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 1.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 1.0f,  1.0f,
+            -0.5f, -0.5f, -0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 0.0f,  1.0f,
+            -0.5f, -0.5f, -0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 0.0f,  1.0f,
+            -0.5f, -0.5f,  0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 0.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 1.0f,  0.0f,
+								 /**/ 					   /**/
+             0.5f,  0.5f, -0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 1.0f,  1.0f,
+             0.5f,  0.5f,  0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 1.0f,  0.0f,
+             0.5f, -0.5f,  0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 0.0f,  0.0f,
+             0.5f, -0.5f,  0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 0.0f,  0.0f,
+             0.5f, -0.5f, -0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 0.0f,  1.0f,
+             0.5f,  0.5f, -0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 1.0f,  1.0f,
+        						 /**/ 					   /**/
+            -0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f,  1.0f,
+             0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f,  1.0f,
+             0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f,  0.0f,
+             0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f,  1.0f,
+								 /**/ 					   /**/
+            -0.5f,  0.5f, -0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 0.0f,  1.0f,
+            -0.5f,  0.5f,  0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 0.0f,  0.0f,
+             0.5f,  0.5f,  0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 1.0f,  0.0f,
+             0.5f,  0.5f,  0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 1.0f,  0.0f,
+             0.5f,  0.5f, -0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 1.0f,  1.0f,
+            -0.5f,  0.5f, -0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 0.0f,  1.0f
+        };
+        // first, configure the cube's VAO (and VBO)
+        glGenVertexArrays(1, &seminarCubeVAO);
+        glGenBuffers(1, &seminarCubeVBO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, seminarCubeVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        glBindVertexArray(seminarCubeVAO);
+
+        const int stride = 8;
+
+        // position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        // normal attribute
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        // texture attribute
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+
+        seminarCubeTexture = loadTexture("textures/cube/container.png");
+    }
+    // render Cube
+    glBindVertexArray(seminarCubeVAO);
+    glBindTexture(GL_TEXTURE_2D, seminarCubeTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+}
+
+std::vector<float> GenerateCircle(glm::vec3 center, float radius, int segmentsNumber, bool isDown)
+{
+	std::vector<float> vertices;
+	float stepAngle = glm::two_pi<float>() / segmentsNumber;
+	for (auto i = 0; i < segmentsNumber; ++i)
+	{
+		vertices.push_back(center.x);
+		vertices.push_back(center.y);
+		vertices.push_back(center.z);
+		vertices.push_back(0);
+		vertices.push_back(isDown ? -1 : 1);
+		vertices.push_back(0);
+		vertices.push_back(0.5);
+		vertices.push_back(0.5);
+
+		vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
+		vertices.push_back(center.y);
+		vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
+		vertices.push_back(0);
+		vertices.push_back(isDown ? -1 : 1);
+		vertices.push_back(0);
+		vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
+		vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
+		
+		vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
+		vertices.push_back(center.y);
+		vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
+		vertices.push_back(0);
+		vertices.push_back(isDown ? -1 : 1);
+		vertices.push_back(0);
+		vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
+		vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
+	}
+}
+
+std::vector<float> GenerateBorder(glm::vec3 center, float radius, int segmentsNumber, float height, int heightSegmentsNumber)
+{
+	std::vector<float> vertices;
+	float stepAngle = glm::two_pi<float>() / segmentsNumber;
+	float segmentHeight = height / heightSegmentsNumber;
+	for (auto i = 0; i < heightSegmentsNumber; ++i)
+	{
+		for (auto j = 0; j < segmentsNumber; ++j)
+		{
+			float xFirst = center.x + glm::cos(stepAngle * j) * radius;
+			float yFirst = center.y + segmentHeight * i;
+			float zFirst = center.z + glm::sin(stepAngle * j) * radius;
+
+			float xSecond = center.x + glm::cos(stepAngle * (j + 1)) * radius;
+			float ySecond = center.y + segmentHeight * i;
+			float zSecond = center.z + glm::sin(stepAngle * (j + 1)) * radius;
+
+			float xThird = center.x + glm::cos(stepAngle * (j + 1)) * radius;
+			float yThird = center.y + segmentHeight * (i + 1);
+			float zThird = center.z + glm::sin(stepAngle * (j + 1)) * radius;
+
+			float xFourth = center.x + glm::cos(stepAngle * j) * radius;
+			float yFourth = center.y + segmentHeight * (i + 1);
+			float zFourth = center.z + glm::sin(stepAngle * j) * radius;
+
+
+			vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
+			vertices.push_back(center.y + segmentHeight * i);
+			vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
+			vertices.push_back(0);
+			vertices.push_back(isDown ? -1 : 1);
+			vertices.push_back(0);
+			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
+			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
+
+			vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
+			vertices.push_back(center.y);
+			vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
+			vertices.push_back(0);
+			vertices.push_back(isDown ? -1 : 1);
+			vertices.push_back(0);
+			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
+			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
+		}
+	}
+}
 
 // renderQuad() renders a 1x1 XY quad in NDC
 // -----------------------------------------
@@ -582,3 +847,40 @@ unsigned int loadCubemap(vector<std::string> faces)
 
     return textureID;
 }  
+
+unsigned int loadTexture(char const * path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
