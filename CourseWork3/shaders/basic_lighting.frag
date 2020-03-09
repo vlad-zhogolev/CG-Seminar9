@@ -15,7 +15,7 @@ uniform sampler2D diffuse;
 void main()
 {
     // ambient
-    float ambientStrength = 0.1;
+    float ambientStrength = 1;
     vec3 ambient = ambientStrength * texture(diffuse, TexCoords).rgb;
   	
     // diffuse 

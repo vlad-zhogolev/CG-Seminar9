@@ -20,6 +20,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <array>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -29,6 +30,7 @@ void processInput(GLFWwindow *window, LightManager& lightManager);
 void renderCube();
 void renderSeminarCube();
 void renderSeminarPyramid();
+void renderSeminarCylinder();
 void renderPyramid();
 void renderQuad();
 void renderSkybox(unsigned int cubemapTexture);
@@ -215,6 +217,8 @@ int main()
         for (SpotLights::size_type i = 0; i < spotLights.size(); ++i)        
             shader.setVec3("spotLights[" + to_string(i) + "].position", spotLights[i].getPosition());            
         
+
+		// render scene contents
         basicLighting.use();
         basicLighting.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
         basicLighting.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -222,10 +226,17 @@ int main()
         basicLighting.setVec3("viewPos", camera.Position);
         basicLighting.setMat4("projection", projection);
         basicLighting.setMat4("view", view);
-        glm::mat4 myModel = glm::mat4(1.0f);
-        basicLighting.setMat4("model", myModel);
+		{   // block allows to define matrix with name model
+			glm::mat4 model = glm::mat4(1.0f);
+			basicLighting.setMat4("model", model);
+		}
         //renderSeminarCube();
-		renderSeminarPyramid();
+		//renderSeminarPyramid();
+		//renderSeminarCylinder();
+		// render ground
+		renderQuad();
+
+
 
         // Render lights on top of scene        
         shaderLightBox.use();            
@@ -637,14 +648,14 @@ void renderSeminarCube()
     glBindVertexArray(0);
 }
 
-std::vector<float> GenerateCircle(glm::vec3 center, float radius, int segmentsNumber, bool isDown)
+std::vector<float> GenerateCircle(glm::vec3 center, float radius, float height, int segmentsNumber, bool isDown)
 {
 	std::vector<float> vertices;
 	float stepAngle = glm::two_pi<float>() / segmentsNumber;
 	for (auto i = 0; i < segmentsNumber; ++i)
 	{
 		vertices.push_back(center.x);
-		vertices.push_back(center.y);
+		vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
 		vertices.push_back(center.z);
 		vertices.push_back(0);
 		vertices.push_back(isDown ? -1 : 1);
@@ -652,24 +663,67 @@ std::vector<float> GenerateCircle(glm::vec3 center, float radius, int segmentsNu
 		vertices.push_back(0.5);
 		vertices.push_back(0.5);
 
-		vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
-		vertices.push_back(center.y);
-		vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
-		vertices.push_back(0);
-		vertices.push_back(isDown ? -1 : 1);
-		vertices.push_back(0);
-		vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
-		vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
+		if (isDown)
+		{
+			vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
+			vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
+			vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
+			vertices.push_back(0);
+			vertices.push_back(isDown ? -1 : 1);
+			vertices.push_back(0);
+			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
+			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
+
+			vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
+			vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
+			vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
+			vertices.push_back(0);
+			vertices.push_back(isDown ? -1 : 1);
+			vertices.push_back(0);
+			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
+			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
+		}
+		else
+		{
+			vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
+			vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
+			vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
+			vertices.push_back(0);
+			vertices.push_back(isDown ? -1 : 1);
+			vertices.push_back(0);
+			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
+			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
+
+			vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
+			vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
+			vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
+			vertices.push_back(0);
+			vertices.push_back(isDown ? -1 : 1);
+			vertices.push_back(0);
+			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
+			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
+		}
 		
-		vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
-		vertices.push_back(center.y);
-		vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
-		vertices.push_back(0);
-		vertices.push_back(isDown ? -1 : 1);
-		vertices.push_back(0);
-		vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
-		vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
 	}
+	return vertices;
+}
+
+std::array<float, 8> GenerateVertex(glm::vec3& center, float radius, float height, float segmentHeight, float segmentAngle)
+{
+	std::array<float, 8> vertex;
+	// vertex coordinates
+	vertex[0] = center.x + glm::cos(segmentAngle) * radius;
+	vertex[1] = center.y + segmentHeight - height / 2.0f;
+	vertex[2] = center.z + glm::sin(segmentAngle) * radius;
+	// normal
+	vertex[3] = glm::cos(segmentAngle);
+	vertex[4] = 0;
+	vertex[5] = glm::sin(segmentAngle);
+	// texture coordinates
+	vertex[6] = segmentAngle / glm::two_pi<float>();
+	vertex[7] = segmentHeight / height;
+	
+	return vertex;
 }
 
 std::vector<float> GenerateBorder(glm::vec3 center, float radius, int segmentsNumber, float height, int heightSegmentsNumber)
@@ -681,58 +735,122 @@ std::vector<float> GenerateBorder(glm::vec3 center, float radius, int segmentsNu
 	{
 		for (auto j = 0; j < segmentsNumber; ++j)
 		{
-			float xFirst = center.x + glm::cos(stepAngle * j) * radius;
-			float yFirst = center.y + segmentHeight * i;
-			float zFirst = center.z + glm::sin(stepAngle * j) * radius;
+			auto vertex = GenerateVertex(center, radius, height, i * segmentHeight, j * stepAngle);
+			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
-			float xSecond = center.x + glm::cos(stepAngle * (j + 1)) * radius;
-			float ySecond = center.y + segmentHeight * i;
-			float zSecond = center.z + glm::sin(stepAngle * (j + 1)) * radius;
+			vertex = GenerateVertex(center, radius, height, (i + 1) * segmentHeight, j * stepAngle);
+			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
-			float xThird = center.x + glm::cos(stepAngle * (j + 1)) * radius;
-			float yThird = center.y + segmentHeight * (i + 1);
-			float zThird = center.z + glm::sin(stepAngle * (j + 1)) * radius;
+			vertex = GenerateVertex(center, radius, height, i * segmentHeight, (j + 1) * stepAngle);
+			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
-			float xFourth = center.x + glm::cos(stepAngle * j) * radius;
-			float yFourth = center.y + segmentHeight * (i + 1);
-			float zFourth = center.z + glm::sin(stepAngle * j) * radius;
+			
+			vertex = GenerateVertex(center, radius, height, i * segmentHeight, (j + 1) * stepAngle);
+			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
+			vertex = GenerateVertex(center, radius, height, (i + 1) * segmentHeight, j * stepAngle);
+			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
-			vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
-			vertices.push_back(center.y + segmentHeight * i);
-			vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
-			vertices.push_back(0);
-			vertices.push_back(isDown ? -1 : 1);
-			vertices.push_back(0);
-			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
-			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
-
-			vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
-			vertices.push_back(center.y);
-			vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
-			vertices.push_back(0);
-			vertices.push_back(isDown ? -1 : 1);
-			vertices.push_back(0);
-			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
-			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
+			vertex = GenerateVertex(center, radius, height, (i + 1) * segmentHeight, (j + 1) * stepAngle);
+			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 		}
 	}
+	return vertices;
+}
+
+void ConfigureBuffers(GLuint& VAO, GLuint& VBO, std::vector<float>& vertices)
+{
+	assert(vertices.size() % 8 == 0);
+
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+
+	glBindVertexArray(VAO);
+
+	const int stride = 8;
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// normal attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	// texture attribute
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+GLuint downCircleVAO = 0;
+GLuint downCircleVBO = 0;
+GLuint upCircleVAO = 0;
+GLuint upCircleVBO = 0;
+GLuint circleTexture = 0;
+
+GLuint borderVAO = 0;
+GLuint borderVBO = 0;
+GLuint borderTexture = 0;
+
+void renderSeminarCylinder()
+{
+	glm::vec3 center(0.0f, 0.0f, 0.0f);
+	float radius = 1.0f;
+	float height = 1.0f;
+	int heightSegmentsNumber = 2;
+	int angleSegmentsNumber = 18;
+
+	if (downCircleVAO == 0)
+	{
+		auto downCircleVertices = GenerateCircle(center, radius, height, angleSegmentsNumber, true);
+		auto upCircleVertices = GenerateCircle(center, radius, height, angleSegmentsNumber, false);
+		auto borderVertices = GenerateBorder(center, radius, angleSegmentsNumber, height, heightSegmentsNumber);
+		
+		ConfigureBuffers(downCircleVAO, downCircleVBO, downCircleVertices);
+		ConfigureBuffers(upCircleVAO, upCircleVBO, upCircleVertices);
+		ConfigureBuffers(borderVAO, borderVBO, borderVertices);
+
+		circleTexture = loadTexture("textures/cylinder/awesomeface.png");
+		borderTexture = loadTexture("textures/cylinder/barrel1.jpg");
+	}
+
+	glBindTexture(GL_TEXTURE_2D, circleTexture);
+	glBindVertexArray(downCircleVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 3 * angleSegmentsNumber);
+	glBindVertexArray(0);
+	
+	glBindVertexArray(upCircleVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 3 * angleSegmentsNumber);
+	glBindVertexArray(0);
+	
+	glBindTexture(GL_TEXTURE_2D, borderTexture);
+	glBindVertexArray(borderVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 6 * heightSegmentsNumber * angleSegmentsNumber);
+	glBindVertexArray(0);
 }
 
 // renderQuad() renders a 1x1 XY quad in NDC
 // -----------------------------------------
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
+unsigned int quadTexture = 0;
 void renderQuad()
 {
     if (quadVAO == 0)
     {
         float quadVertices[] = {
-            // positions        // texture Coords
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-            1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-            1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+            // positions          //normals                       // texture Coords
+            -1000.0f, 0.0f, /**/  1000.0f, 0.0f, 1.0f, 0.0f, /**/    0.0f, 1000.0f,
+			 1000.0f, 0.0f, /**/  1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f, 1000.0f,
+			-1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/    0.0f,    0.0f,
+			 			    /**/							 /**/
+			 1000.0f, 0.0f, /**/  1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f, 1000.0f,
+			 1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f,    0.0f,
+			-1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/    0.0f,    0.0f,
         };
         // setup plane VAO
         glGenVertexArrays(1, &quadVAO);
@@ -740,13 +858,24 @@ void renderQuad()
         glBindVertexArray(quadVAO);
         glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+		const int stride = 8;
+
+		// position attribute
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		// normal attribute
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+		// texture attribute
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+
+		quadTexture = loadTexture("textures/cube/container.png");
     }
+	glBindTexture(GL_TEXTURE_2D, quadTexture);
     glBindVertexArray(quadVAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
 }
 
