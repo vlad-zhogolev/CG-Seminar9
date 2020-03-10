@@ -21,6 +21,7 @@
 #include <vector>
 #include <algorithm>
 #include <array>
+#include <random>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -218,7 +219,7 @@ int main()
             shader.setVec3("spotLights[" + to_string(i) + "].position", spotLights[i].getPosition());            
         
 
-		// render scene contents
+        // render scene contents
         basicLighting.use();
         basicLighting.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
         basicLighting.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -226,92 +227,117 @@ int main()
         basicLighting.setVec3("viewPos", camera.Position);
         basicLighting.setMat4("projection", projection);
         basicLighting.setMat4("view", view);
-		{   // block allows to define matrix with name model
-			glm::mat4 model = glm::mat4(1.0f);
-			basicLighting.setMat4("model", model);
-			// render ground
-			renderQuad();
-		}
+        
+        {   // block allows to define matrix with name 'model'
+            glm::mat4 model = glm::mat4(1.0f);
+            basicLighting.setMat4("model", model);
+            // render ground
+            renderQuad();
+        }
 
-		{
-			glm::mat4 model = glm::mat4{};
-			glm::mat4 moveCubeUp = glm::translate(model, glm::vec3(0.5f, 0.5f, 0.0f));
-			basicLighting.setMat4("model", moveCubeUp);
-			renderSeminarCube();
+        { // Seminar scene contents
+            // Boxes
+            glm::mat4 model = glm::mat4{};
+            glm::mat4 moveCubeUp = glm::translate(model, glm::vec3(0.5f, 0.5f, 0.0f));
+            basicLighting.setMat4("model", moveCubeUp);
+            renderSeminarCube();
 
-			glm::mat4 moveSecondCube = glm::translate(model, glm::vec3(0.7f, 0.5f, 1.4f));
-			basicLighting.setMat4("model", moveSecondCube);
-			renderSeminarCube();
+            glm::mat4 moveSecondCube = glm::translate(model, glm::vec3(0.7f, 0.5f, 1.4f));
+            basicLighting.setMat4("model", moveSecondCube);
+            renderSeminarCube();
 
-			glm::mat4 moveThirdCube = glm::translate(model, glm::vec3(-0.6f, 0.5f, 0.2f));
-			basicLighting.setMat4("model", moveThirdCube);
-			renderSeminarCube();
+            glm::mat4 moveThirdCube = glm::translate(model, glm::vec3(-0.6f, 0.5f, 0.2f));
+            basicLighting.setMat4("model", moveThirdCube);
+            renderSeminarCube();
 
-			glm::mat4 moveFourthCube = glm::translate(model, glm::vec3(-0.7f, 0.5f, 1.3f));
-			basicLighting.setMat4("model", moveFourthCube);
-			renderSeminarCube();
+            glm::mat4 moveFourthCube = glm::translate(model, glm::vec3(-0.7f, 0.5f, 1.3f));
+            basicLighting.setMat4("model", moveFourthCube);
+            renderSeminarCube();
 
-			glm::mat4 moveFifthCube = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.6f));
-			basicLighting.setMat4("model", moveFifthCube);
-			renderSeminarCube();
+            glm::mat4 moveFifthCube = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.6f));
+            basicLighting.setMat4("model", moveFifthCube);
+            renderSeminarCube();
 
-			glm::mat4 pyramidModel = glm::mat4{};
-			pyramidModel = glm::translate(pyramidModel, glm::vec3(0.0f, 2.75, 0.6f));
-			
-			static float angle = 0;
-			if (angle < glm::two_pi<float>())
-			{
-				angle += glm::quarter_pi<float>() * deltaTime;
-			}
-			else
-			{
-				angle = 0;
-			}
+            glm::mat4 pyramidModel = glm::mat4{};
+            pyramidModel = glm::translate(pyramidModel, glm::vec3(0.0f, 2.75, 0.6f));
 
-			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			basicLighting.setMat4("model", pyramidModel);
-			renderSeminarPyramid();
+            static float dynamidRotationAngle = 0;
+            static float currentQuarter = 0;
+            static bool isQuarterChanged = false;
+            const auto cylinderNumber = 8;
+            const float sphereRadius = 3;
 
-			glm::mat4 cylinderModel{};
-			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
-			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
-			cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
-			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			basicLighting.setMat4("model", cylinderModel);
-			renderSeminarCylinder();
+            std::random_device randomDevice;  //Will be used to obtain a seed for the random number engine
+            std::mt19937 generator(randomDevice()); //Standard mersenne_twister_engine seeded with rd()
+            std::uniform_real_distribution<> distribution(-glm::quarter_pi<float>(), glm::quarter_pi<float>());
 
-			cylinderModel = glm::mat4{};
-			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
-			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
-			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
-			cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
-			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			basicLighting.setMat4("model", cylinderModel);
-			renderSeminarCylinder();
+			std::array<glm::vec3, cylinderNumber> currentCylinderPosition;
+			std::array<glm::vec3, cylinderNumber> destinationCylinderPosition;
+			std::array<float, cylinderNumber> yVelocities;
 
-			cylinderModel = glm::mat4{};
-			cylinderModel = glm::rotate(cylinderModel, 2 * glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
-			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
-			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
-			cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
-			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			basicLighting.setMat4("model", cylinderModel);
-			renderSeminarCylinder();
+            dynamidRotationAngle += glm::quarter_pi<float>() * deltaTime;
+            if (dynamidRotationAngle - currentQuarter > glm::half_pi<float>())
+            {
+                if (currentQuarter == 0.0f)
+                {
+                    currentQuarter = glm::half_pi<float>();
+                }
+                else if (currentQuarter == glm::half_pi<float>())
+                {
+                    currentQuarter = glm::pi<float>();
+                }
+                else if (currentQuarter == glm::pi<float>())
+                {
+                    currentQuarter = glm::three_over_two_pi<float>();
+                }
+                else if (currentQuarter == glm::three_over_two_pi<float>())
+                {
+                    currentQuarter = 0.0f;
+                    dynamidRotationAngle = 0.0f;
+                }
+                for (auto i = 0; i < cylinderNumber; ++i)
+                {
+					const auto destinationAngle = currentQuarter + glm::half_pi<float>();
+					const auto heightAngle = distribution(generator);
+					const auto newPosition = glm::vec3(glm::cos(destinationAngle) * sphereRadius, sphereRadius * glm::sin(heightAngle), glm::sin(destinationAngle));
 
-			cylinderModel = glm::mat4{};
-			cylinderModel = glm::rotate(cylinderModel, 3 * glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
-			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
-			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
-			cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
-			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			basicLighting.setMat4("model", cylinderModel);
-			renderSeminarCylinder();
+					const auto rotationAngle = glm::dot(currentCylinderPosition[i], newPosition) / (sphereRadius * sphereRadius);
+					yVelocities[i] = (newPosition.y - currentCylinderPosition.y) / 2.0f;
+					
+                }
+            }
+            else
+            {
+                isQuarterChanged = false;
+            }
 
-		}
+            // Mason all-seeing eye
+            pyramidModel = glm::rotate(pyramidModel, dynamidRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+            basicLighting.setMat4("model", pyramidModel);
+            renderSeminarPyramid();
+
+            // Circle of cylinder
+            
+            for (auto i = 0; i < cylinderNumber; ++i)
+            {
+                auto cylinderModel = glm::mat4{};
+
+                const auto startRotationAngle = i * glm::two_pi<float>() / static_cast<float>(cylinderNumber);
+                // Set rotation around global Y axis
+                cylinderModel = glm::rotate(cylinderModel, startRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+                cylinderModel = glm::rotate(cylinderModel, -dynamidRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+                // Translate cylinder by the height and radius of circle of cylinders
+                cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
+                // Put object on the side and scale it
+                cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
+                cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
+                // Rotate around object's Y axis (simulate wheel movement)
+                cylinderModel = glm::rotate(cylinderModel, -dynamidRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+
+                basicLighting.setMat4("model", cylinderModel);
+                renderSeminarCylinder();
+            }
+        } // End of seminar scene contents
 
         // Render lights on top of scene        
         shaderLightBox.use();            
@@ -327,12 +353,14 @@ int main()
             shaderLightBox.setVec3("lightColor", pointLights[i].getColor());
             renderCube();
         }
-		glm::mat4 model = glm::mat4();
-		model = glm::translate(model, glm::vec3(lightPos));
-		model = glm::scale(model, glm::vec3(0.125f));
-		shaderLightBox.setMat4("model", model);
-		shaderLightBox.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-		renderCube();
+
+        // basic lighting cube
+        glm::mat4 model = glm::mat4();
+        model = glm::translate(model, glm::vec3(lightPos));
+        model = glm::scale(model, glm::vec3(0.125f));
+        shaderLightBox.setMat4("model", model);
+        shaderLightBox.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        renderCube();
 
         for (unsigned int i = 0; i < spotLights.size(); ++i)
         {
@@ -347,7 +375,7 @@ int main()
             renderPyramid();           
         }
 
-        // Setup skybox shader and OpenGL for skybox rendering 
+        // Setup skybox shader and OpenGL for skybox rendering
         skyboxShader.use();
         skyboxShader.setMat4("projection", projection);
         skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.GetViewMatrix())));
@@ -571,73 +599,73 @@ unsigned int seminarPyramidTexture = 0;
 
 void renderSeminarPyramid()
 {
-	if (seminarPyramidVAO == 0)
-	{
-		float vertices[] =
-		{
-			// View from up
-			// 4---------3
-			// | \     / |
-			// |  \   /  |
-			// |    5    |
-			// |  /   \  |
-			// | /     \ |
-			// 1---------2
-			
-			// front face	           // normals               // texture coordinates
-			 0.5f, -0.5f,  0.5f, /**/  0.0f,  0.7f,  0.7f, /**/ 1.0f, 0.0f, //2
-			 0.0f,  0.5f,  0.0f, /**/  0.0f,  0.7f,  0.7f, /**/ 0.5f, 1.0f, //5
-			-0.5f, -0.5f,  0.5f, /**/  0.0f,  0.7f,  0.7f, /**/ 0.0f, 0.0f, //1              
-			// rigth face		 /**/  		 	   		   /**/
-			 0.5f, -0.5f, -0.5f, /**/  0.7f,  0.7f,  0.0f, /**/ 1.0f, 0.0f, //3
-			 0.0f,  0.5f,  0.0f, /**/  0.7f,  0.7f,  0.0f, /**/ 0.5f, 1.0f, //5
-			 0.5f, -0.5f,  0.5f, /**/  0.7f,  0.7f,  0.0f, /**/ 0.0f, 0.0f,
-			// left face		 /**/			 	   	   /**/
-			-0.5f, -0.5f,  0.5f, /**/ -0.7f,  0.7f,  0.0f, /**/ 1.0f, 0.0f,
-			 0.0f,  0.5f,  0.0f, /**/ -0.7f,  0.7f,  0.0f, /**/ 0.5f, 1.0f,
-			-0.5f, -0.5f, -0.5f, /**/ -0.7f,  0.7f,  0.0f, /**/ 0.0f, 0.0f, //4
-			// back face		 /**/			 		   /**/
-			-0.5f, -0.5f, -0.5f, /**/  0.0f,  0.7f, -0.7f, /**/ 1.0f, 0.0f,
-			 0.0f,  0.5f,  0.0f, /**/  0.0f,  0.7f, -0.7f, /**/ 0.5f, 1.0f,
-			 0.5f, -0.5f, -0.5f, /**/  0.0f,  0.7f, -0.7f, /**/ 0.0f, 0.0f,
-			// bottom face		 /**/					   /**/
-			 0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f, 0.0f, //3
-			 0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f, 1.0f, //2
-			-0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f, 1.0f, //1
-								 /**/					   /**/
-			 0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f, 0.0f, //3
-			-0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f, 1.0f, //1
-			-0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f, 0.0f, //4
-		};
+    if (seminarPyramidVAO == 0)
+    {
+        float vertices[] =
+        {
+            // View from up
+            // 4---------3
+            // | \     / |
+            // |  \   /  |
+            // |    5    |
+            // |  /   \  |
+            // | /     \ |
+            // 1---------2
+            
+            // front face              // normals               // texture coordinates
+             0.5f, -0.5f,  0.5f, /**/  0.0f,  0.7f,  0.7f, /**/ 1.0f, 0.0f, //2
+             0.0f,  0.5f,  0.0f, /**/  0.0f,  0.7f,  0.7f, /**/ 0.5f, 1.0f, //5
+            -0.5f, -0.5f,  0.5f, /**/  0.0f,  0.7f,  0.7f, /**/ 0.0f, 0.0f, //1              
+            // rigth face        /**/                      /**/
+             0.5f, -0.5f, -0.5f, /**/  0.7f,  0.7f,  0.0f, /**/ 1.0f, 0.0f, //3
+             0.0f,  0.5f,  0.0f, /**/  0.7f,  0.7f,  0.0f, /**/ 0.5f, 1.0f, //5
+             0.5f, -0.5f,  0.5f, /**/  0.7f,  0.7f,  0.0f, /**/ 0.0f, 0.0f,
+            // left face         /**/                      /**/
+            -0.5f, -0.5f,  0.5f, /**/ -0.7f,  0.7f,  0.0f, /**/ 1.0f, 0.0f,
+             0.0f,  0.5f,  0.0f, /**/ -0.7f,  0.7f,  0.0f, /**/ 0.5f, 1.0f,
+            -0.5f, -0.5f, -0.5f, /**/ -0.7f,  0.7f,  0.0f, /**/ 0.0f, 0.0f, //4
+            // back face         /**/                      /**/
+            -0.5f, -0.5f, -0.5f, /**/  0.0f,  0.7f, -0.7f, /**/ 1.0f, 0.0f,
+             0.0f,  0.5f,  0.0f, /**/  0.0f,  0.7f, -0.7f, /**/ 0.5f, 1.0f,
+             0.5f, -0.5f, -0.5f, /**/  0.0f,  0.7f, -0.7f, /**/ 0.0f, 0.0f,
+            // bottom face       /**/                      /**/
+             0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f, 0.0f, //3
+             0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f, 1.0f, //2
+            -0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f, 1.0f, //1
+                                 /**/                      /**/
+             0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f, 0.0f, //3
+            -0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f, 1.0f, //1
+            -0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f, 0.0f, //4
+        };
 
-		glGenVertexArrays(1, &seminarPyramidVAO);
-		glGenBuffers(1, &seminarPyramidVBO);
-		glBindVertexArray(seminarPyramidVAO);
-		// fill buffer
-		glBindBuffer(GL_ARRAY_BUFFER, seminarPyramidVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
+        glGenVertexArrays(1, &seminarPyramidVAO);
+        glGenBuffers(1, &seminarPyramidVBO);
+        glBindVertexArray(seminarPyramidVAO);
+        // fill buffer
+        glBindBuffer(GL_ARRAY_BUFFER, seminarPyramidVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
 
-		const int stride = 8;
+        const int stride = 8;
 
-		// position attribute
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-		// normal attribute
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-		glEnableVertexAttribArray(1);
-		// texture attribute
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
-		glEnableVertexAttribArray(2);
+        // position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        // normal attribute
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        // texture attribute
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(2);
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
 
-		seminarPyramidTexture = loadTexture("textures/pyramid/mason1.jpg");
-	}
-	glBindVertexArray(seminarPyramidVAO);
-	glBindTexture(GL_TEXTURE_2D, seminarPyramidTexture);
-	glDrawArrays(GL_TRIANGLES, 0, 18);
-	glBindVertexArray(0);
+        seminarPyramidTexture = loadTexture("textures/pyramid/mason1.jpg");
+    }
+    glBindVertexArray(seminarPyramidVAO);
+    glBindTexture(GL_TEXTURE_2D, seminarPyramidTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 18);
+    glBindVertexArray(0);
 }
 
 unsigned int seminarCubeVAO = 0;
@@ -649,43 +677,43 @@ void renderSeminarCube()
     if (seminarCubeVAO == 0)
     {
         float vertices[] = 
-		{
-			 // coordinates	           // normals               // texture coordinates
+        {
+             // coordinates            // normals               // texture coordinates
              0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  1.0f,
              0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  0.0f,
             -0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  0.0f,
             -0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  0.0f,
             -0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  1.0f,
              0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  1.0f,
-            					 /**/ 					   /**/
+                                 /**/                      /**/
             -0.5f, -0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 0.0f,  0.0f,
              0.5f, -0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 1.0f,  0.0f,
              0.5f,  0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 1.0f,  1.0f,
              0.5f,  0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 1.0f,  1.0f,
             -0.5f,  0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 0.0f,  1.0f,
             -0.5f, -0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 0.0f,  0.0f,
-								 /**/ 					   /**/
+                                 /**/                      /**/
             -0.5f,  0.5f,  0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 1.0f,  0.0f,
             -0.5f,  0.5f, -0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 1.0f,  1.0f,
             -0.5f, -0.5f, -0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 0.0f,  1.0f,
             -0.5f, -0.5f, -0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 0.0f,  1.0f,
             -0.5f, -0.5f,  0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 0.0f,  0.0f,
             -0.5f,  0.5f,  0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 1.0f,  0.0f,
-								 /**/ 					   /**/
+                                 /**/                      /**/
              0.5f,  0.5f, -0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 1.0f,  1.0f,
              0.5f,  0.5f,  0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 1.0f,  0.0f,
              0.5f, -0.5f,  0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 0.0f,  0.0f,
              0.5f, -0.5f,  0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 0.0f,  0.0f,
              0.5f, -0.5f, -0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 0.0f,  1.0f,
              0.5f,  0.5f, -0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 1.0f,  1.0f,
-        						 /**/ 					   /**/
+                                 /**/                      /**/
             -0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f,  1.0f,
              0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f,  1.0f,
              0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f,  0.0f,
              0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f,  0.0f,
             -0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f,  0.0f,
             -0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f,  1.0f,
-								 /**/ 					   /**/
+                                 /**/                      /**/
             -0.5f,  0.5f, -0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 0.0f,  1.0f,
             -0.5f,  0.5f,  0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 0.0f,  0.0f,
              0.5f,  0.5f,  0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 1.0f,  0.0f,
@@ -725,140 +753,140 @@ void renderSeminarCube()
 
 std::vector<float> GenerateCircle(glm::vec3 center, float radius, float height, int segmentsNumber, bool isDown)
 {
-	std::vector<float> vertices;
-	float stepAngle = glm::two_pi<float>() / segmentsNumber;
-	for (auto i = 0; i < segmentsNumber; ++i)
-	{
-		vertices.push_back(center.x);
-		vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
-		vertices.push_back(center.z);
-		vertices.push_back(0);
-		vertices.push_back(isDown ? -1 : 1);
-		vertices.push_back(0);
-		vertices.push_back(0.5);
-		vertices.push_back(0.5);
+    std::vector<float> vertices;
+    float stepAngle = glm::two_pi<float>() / segmentsNumber;
+    for (auto i = 0; i < segmentsNumber; ++i)
+    {
+        vertices.push_back(center.x);
+        vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
+        vertices.push_back(center.z);
+        vertices.push_back(0);
+        vertices.push_back(isDown ? -1 : 1);
+        vertices.push_back(0);
+        vertices.push_back(0.5);
+        vertices.push_back(0.5);
 
-		if (isDown)
-		{
-			vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
-			vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
-			vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
-			vertices.push_back(0);
-			vertices.push_back(isDown ? -1 : 1);
-			vertices.push_back(0);
-			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
-			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
+        if (isDown)
+        {
+            vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
+            vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
+            vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
+            vertices.push_back(0);
+            vertices.push_back(isDown ? -1 : 1);
+            vertices.push_back(0);
+            vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
+            vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
 
-			vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
-			vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
-			vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
-			vertices.push_back(0);
-			vertices.push_back(isDown ? -1 : 1);
-			vertices.push_back(0);
-			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
-			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
-		}
-		else
-		{
-			vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
-			vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
-			vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
-			vertices.push_back(0);
-			vertices.push_back(isDown ? -1 : 1);
-			vertices.push_back(0);
-			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
-			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
+            vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
+            vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
+            vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
+            vertices.push_back(0);
+            vertices.push_back(isDown ? -1 : 1);
+            vertices.push_back(0);
+            vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
+            vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
+        }
+        else
+        {
+            vertices.push_back(center.x + glm::cos(stepAngle * (i + 1)) * radius);
+            vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
+            vertices.push_back(center.z + glm::sin(stepAngle * (i + 1)) * radius);
+            vertices.push_back(0);
+            vertices.push_back(isDown ? -1 : 1);
+            vertices.push_back(0);
+            vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * (i + 1)));
+            vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * (i + 1)));
 
-			vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
-			vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
-			vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
-			vertices.push_back(0);
-			vertices.push_back(isDown ? -1 : 1);
-			vertices.push_back(0);
-			vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
-			vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
-		}
-		
-	}
-	return vertices;
+            vertices.push_back(center.x + glm::cos(stepAngle * i) * radius);
+            vertices.push_back(center.y + (isDown ? -height / 2.0f : height / 2.0f));
+            vertices.push_back(center.z + glm::sin(stepAngle * i) * radius);
+            vertices.push_back(0);
+            vertices.push_back(isDown ? -1 : 1);
+            vertices.push_back(0);
+            vertices.push_back(0.5 + 0.5 * glm::cos(stepAngle * i));
+            vertices.push_back(0.5 + 0.5 * glm::sin(stepAngle * i));
+        }
+        
+    }
+    return vertices;
 }
 
 std::array<float, 8> GenerateVertex(glm::vec3& center, float radius, float height, float segmentHeight, float segmentAngle)
 {
-	std::array<float, 8> vertex;
-	// vertex coordinates
-	vertex[0] = center.x + glm::cos(segmentAngle) * radius;
-	vertex[1] = center.y + segmentHeight - height / 2.0f;
-	vertex[2] = center.z + glm::sin(segmentAngle) * radius;
-	// normal
-	vertex[3] = glm::cos(segmentAngle);
-	vertex[4] = 0;
-	vertex[5] = glm::sin(segmentAngle);
-	// texture coordinates
-	vertex[6] = segmentAngle / glm::two_pi<float>();
-	vertex[7] = segmentHeight / height;
-	
-	return vertex;
+    std::array<float, 8> vertex;
+    // vertex coordinates
+    vertex[0] = center.x + glm::cos(segmentAngle) * radius;
+    vertex[1] = center.y + segmentHeight - height / 2.0f;
+    vertex[2] = center.z + glm::sin(segmentAngle) * radius;
+    // normal
+    vertex[3] = glm::cos(segmentAngle);
+    vertex[4] = 0;
+    vertex[5] = glm::sin(segmentAngle);
+    // texture coordinates
+    vertex[6] = segmentAngle / glm::two_pi<float>();
+    vertex[7] = segmentHeight / height;
+    
+    return vertex;
 }
 
 std::vector<float> GenerateBorder(glm::vec3 center, float radius, int segmentsNumber, float height, int heightSegmentsNumber)
 {
-	std::vector<float> vertices;
-	float stepAngle = glm::two_pi<float>() / segmentsNumber;
-	float segmentHeight = height / heightSegmentsNumber;
-	for (auto i = 0; i < heightSegmentsNumber; ++i)
-	{
-		for (auto j = 0; j < segmentsNumber; ++j)
-		{
-			auto vertex = GenerateVertex(center, radius, height, i * segmentHeight, j * stepAngle);
-			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
+    std::vector<float> vertices;
+    float stepAngle = glm::two_pi<float>() / segmentsNumber;
+    float segmentHeight = height / heightSegmentsNumber;
+    for (auto i = 0; i < heightSegmentsNumber; ++i)
+    {
+        for (auto j = 0; j < segmentsNumber; ++j)
+        {
+            auto vertex = GenerateVertex(center, radius, height, i * segmentHeight, j * stepAngle);
+            vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
-			vertex = GenerateVertex(center, radius, height, (i + 1) * segmentHeight, j * stepAngle);
-			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
+            vertex = GenerateVertex(center, radius, height, (i + 1) * segmentHeight, j * stepAngle);
+            vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
-			vertex = GenerateVertex(center, radius, height, i * segmentHeight, (j + 1) * stepAngle);
-			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
+            vertex = GenerateVertex(center, radius, height, i * segmentHeight, (j + 1) * stepAngle);
+            vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
-			
-			vertex = GenerateVertex(center, radius, height, i * segmentHeight, (j + 1) * stepAngle);
-			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
+            
+            vertex = GenerateVertex(center, radius, height, i * segmentHeight, (j + 1) * stepAngle);
+            vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
-			vertex = GenerateVertex(center, radius, height, (i + 1) * segmentHeight, j * stepAngle);
-			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
+            vertex = GenerateVertex(center, radius, height, (i + 1) * segmentHeight, j * stepAngle);
+            vertices.insert(vertices.end(), vertex.begin(), vertex.end());
 
-			vertex = GenerateVertex(center, radius, height, (i + 1) * segmentHeight, (j + 1) * stepAngle);
-			vertices.insert(vertices.end(), vertex.begin(), vertex.end());
-		}
-	}
-	return vertices;
+            vertex = GenerateVertex(center, radius, height, (i + 1) * segmentHeight, (j + 1) * stepAngle);
+            vertices.insert(vertices.end(), vertex.begin(), vertex.end());
+        }
+    }
+    return vertices;
 }
 
 void ConfigureBuffers(GLuint& VAO, GLuint& VBO, std::vector<float>& vertices)
 {
-	assert(vertices.size() % 8 == 0);
+    assert(vertices.size() % 8 == 0);
 
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 
-	glBindVertexArray(VAO);
+    glBindVertexArray(VAO);
 
-	const int stride = 8;
+    const int stride = 8;
 
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// normal attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-	// texture attribute
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    // texture attribute
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 GLuint downCircleVAO = 0;
@@ -873,39 +901,39 @@ GLuint borderTexture = 0;
 
 void renderSeminarCylinder()
 {
-	glm::vec3 center(0.0f, 0.0f, 0.0f);
-	float radius = 1.0f;
-	float height = 1.0f;
-	int heightSegmentsNumber = 2;
-	int angleSegmentsNumber = 18;
+    glm::vec3 center(0.0f, 0.0f, 0.0f);
+    float radius = 1.0f;
+    float height = 1.0f;
+    int heightSegmentsNumber = 2;
+    int angleSegmentsNumber = 18;
 
-	if (downCircleVAO == 0)
-	{
-		auto downCircleVertices = GenerateCircle(center, radius, height, angleSegmentsNumber, true);
-		auto upCircleVertices = GenerateCircle(center, radius, height, angleSegmentsNumber, false);
-		auto borderVertices = GenerateBorder(center, radius, angleSegmentsNumber, height, heightSegmentsNumber);
-		
-		ConfigureBuffers(downCircleVAO, downCircleVBO, downCircleVertices);
-		ConfigureBuffers(upCircleVAO, upCircleVBO, upCircleVertices);
-		ConfigureBuffers(borderVAO, borderVBO, borderVertices);
+    if (downCircleVAO == 0)
+    {
+        auto downCircleVertices = GenerateCircle(center, radius, height, angleSegmentsNumber, true);
+        auto upCircleVertices = GenerateCircle(center, radius, height, angleSegmentsNumber, false);
+        auto borderVertices = GenerateBorder(center, radius, angleSegmentsNumber, height, heightSegmentsNumber);
+        
+        ConfigureBuffers(downCircleVAO, downCircleVBO, downCircleVertices);
+        ConfigureBuffers(upCircleVAO, upCircleVBO, upCircleVertices);
+        ConfigureBuffers(borderVAO, borderVBO, borderVertices);
 
-		circleTexture = loadTexture("textures/cylinder/awesomeface.png");
-		borderTexture = loadTexture("textures/cylinder/barrel1.jpg");
-	}
+        circleTexture = loadTexture("textures/cylinder/awesomeface.png");
+        borderTexture = loadTexture("textures/cylinder/barrel1.jpg");
+    }
 
-	glBindTexture(GL_TEXTURE_2D, circleTexture);
-	glBindVertexArray(downCircleVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 3 * angleSegmentsNumber);
-	glBindVertexArray(0);
-	
-	glBindVertexArray(upCircleVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 3 * angleSegmentsNumber);
-	glBindVertexArray(0);
-	
-	glBindTexture(GL_TEXTURE_2D, borderTexture);
-	glBindVertexArray(borderVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 6 * heightSegmentsNumber * angleSegmentsNumber);
-	glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, circleTexture);
+    glBindVertexArray(downCircleVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3 * angleSegmentsNumber);
+    glBindVertexArray(0);
+    
+    glBindVertexArray(upCircleVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3 * angleSegmentsNumber);
+    glBindVertexArray(0);
+    
+    glBindTexture(GL_TEXTURE_2D, borderTexture);
+    glBindVertexArray(borderVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6 * heightSegmentsNumber * angleSegmentsNumber);
+    glBindVertexArray(0);
 }
 
 // renderQuad() renders a 1x1 XY quad in NDC
@@ -920,12 +948,12 @@ void renderQuad()
         float quadVertices[] = {
             // positions          //normals                       // texture Coords
             -1000.0f, 0.0f, /**/  1000.0f, 0.0f, 1.0f, 0.0f, /**/    0.0f, 1000.0f,
-			 1000.0f, 0.0f, /**/  1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f, 1000.0f,
-			-1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/    0.0f,    0.0f,
-			 			    /**/							 /**/
-			 1000.0f, 0.0f, /**/  1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f, 1000.0f,
-			 1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f,    0.0f,
-			-1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/    0.0f,    0.0f,
+             1000.0f, 0.0f, /**/  1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f, 1000.0f,
+            -1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/    0.0f,    0.0f,
+                            /**/                             /**/
+             1000.0f, 0.0f, /**/  1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f, 1000.0f,
+             1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f,    0.0f,
+            -1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/    0.0f,    0.0f,
         };
 
         // setup plane VAO
@@ -935,21 +963,21 @@ void renderQuad()
         glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
 
-		const int stride = 8;
+        const int stride = 8;
 
-		// position attribute
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-		// normal attribute
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-		glEnableVertexAttribArray(1);
-		// texture attribute
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
-		glEnableVertexAttribArray(2);
+        // position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        // normal attribute
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        // texture attribute
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(2);
 
-		quadTexture = loadTexture("textures/cube/container.png");
+        quadTexture = loadTexture("textures/cube/container.png");
     }
-	glBindTexture(GL_TEXTURE_2D, quadTexture);
+    glBindTexture(GL_TEXTURE_2D, quadTexture);
     glBindVertexArray(quadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
