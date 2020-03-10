@@ -229,14 +229,89 @@ int main()
 		{   // block allows to define matrix with name model
 			glm::mat4 model = glm::mat4(1.0f);
 			basicLighting.setMat4("model", model);
+			// render ground
+			renderQuad();
 		}
-        //renderSeminarCube();
-		//renderSeminarPyramid();
-		//renderSeminarCylinder();
-		// render ground
-		renderQuad();
 
+		{
+			glm::mat4 model = glm::mat4{};
+			glm::mat4 moveCubeUp = glm::translate(model, glm::vec3(0.5f, 0.5f, 0.0f));
+			basicLighting.setMat4("model", moveCubeUp);
+			renderSeminarCube();
 
+			glm::mat4 moveSecondCube = glm::translate(model, glm::vec3(0.7f, 0.5f, 1.4f));
+			basicLighting.setMat4("model", moveSecondCube);
+			renderSeminarCube();
+
+			glm::mat4 moveThirdCube = glm::translate(model, glm::vec3(-0.6f, 0.5f, 0.2f));
+			basicLighting.setMat4("model", moveThirdCube);
+			renderSeminarCube();
+
+			glm::mat4 moveFourthCube = glm::translate(model, glm::vec3(-0.7f, 0.5f, 1.3f));
+			basicLighting.setMat4("model", moveFourthCube);
+			renderSeminarCube();
+
+			glm::mat4 moveFifthCube = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.6f));
+			basicLighting.setMat4("model", moveFifthCube);
+			renderSeminarCube();
+
+			glm::mat4 pyramidModel = glm::mat4{};
+			pyramidModel = glm::translate(pyramidModel, glm::vec3(0.0f, 2.75, 0.6f));
+			
+			static float angle = 0;
+			if (angle < glm::two_pi<float>())
+			{
+				angle += glm::quarter_pi<float>() * deltaTime;
+			}
+			else
+			{
+				angle = 0;
+			}
+
+			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			basicLighting.setMat4("model", pyramidModel);
+			renderSeminarPyramid();
+
+			glm::mat4 cylinderModel{};
+			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
+			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
+			cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
+			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			basicLighting.setMat4("model", cylinderModel);
+			renderSeminarCylinder();
+
+			cylinderModel = glm::mat4{};
+			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
+			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
+			cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
+			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			basicLighting.setMat4("model", cylinderModel);
+			renderSeminarCylinder();
+
+			cylinderModel = glm::mat4{};
+			cylinderModel = glm::rotate(cylinderModel, 2 * glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
+			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
+			cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
+			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			basicLighting.setMat4("model", cylinderModel);
+			renderSeminarCylinder();
+
+			cylinderModel = glm::mat4{};
+			cylinderModel = glm::rotate(cylinderModel, 3 * glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
+			cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
+			cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
+			cylinderModel = glm::rotate(cylinderModel, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			basicLighting.setMat4("model", cylinderModel);
+			renderSeminarCylinder();
+
+		}
 
         // Render lights on top of scene        
         shaderLightBox.use();            
@@ -509,7 +584,7 @@ void renderSeminarPyramid()
 			// | /     \ |
 			// 1---------2
 			
-			// front face	        // normals               // texture coordinates
+			// front face	           // normals               // texture coordinates
 			 0.5f, -0.5f,  0.5f, /**/  0.0f,  0.7f,  0.7f, /**/ 1.0f, 0.0f, //2
 			 0.0f,  0.5f,  0.0f, /**/  0.0f,  0.7f,  0.7f, /**/ 0.5f, 1.0f, //5
 			-0.5f, -0.5f,  0.5f, /**/  0.0f,  0.7f,  0.7f, /**/ 0.0f, 0.0f, //1              
@@ -575,7 +650,7 @@ void renderSeminarCube()
     {
         float vertices[] = 
 		{
-			 // coordinates	        // normals               // texture coordinates
+			 // coordinates	           // normals               // texture coordinates
              0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  1.0f,
              0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  0.0f,
             -0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  0.0f,
@@ -852,6 +927,7 @@ void renderQuad()
 			 1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/ 1000.0f,    0.0f,
 			-1000.0f, 0.0f, /**/ -1000.0f, 0.0f, 1.0f, 0.0f, /**/    0.0f,    0.0f,
         };
+
         // setup plane VAO
         glGenVertexArrays(1, &quadVAO);
         glGenBuffers(1, &quadVBO);
