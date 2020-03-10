@@ -262,53 +262,15 @@ int main()
             pyramidModel = glm::translate(pyramidModel, glm::vec3(0.0f, 2.75, 0.6f));
 
             static float dynamidRotationAngle = 0;
-            static float currentQuarter = 0;
-            static bool isQuarterChanged = false;
-            const auto cylinderNumber = 8;
-            const float sphereRadius = 3;
-
-            std::random_device randomDevice;  //Will be used to obtain a seed for the random number engine
-            std::mt19937 generator(randomDevice()); //Standard mersenne_twister_engine seeded with rd()
-            std::uniform_real_distribution<> distribution(-glm::quarter_pi<float>(), glm::quarter_pi<float>());
-
-			std::array<glm::vec3, cylinderNumber> currentCylinderPosition;
-			std::array<glm::vec3, cylinderNumber> destinationCylinderPosition;
-			std::array<float, cylinderNumber> yVelocities;
-
-            dynamidRotationAngle += glm::quarter_pi<float>() * deltaTime;
-            if (dynamidRotationAngle - currentQuarter > glm::half_pi<float>())
+            const int cylinderNumber = 8;
+        
+            if (dynamidRotationAngle < glm::two_pi<float>())
             {
-                if (currentQuarter == 0.0f)
-                {
-                    currentQuarter = glm::half_pi<float>();
-                }
-                else if (currentQuarter == glm::half_pi<float>())
-                {
-                    currentQuarter = glm::pi<float>();
-                }
-                else if (currentQuarter == glm::pi<float>())
-                {
-                    currentQuarter = glm::three_over_two_pi<float>();
-                }
-                else if (currentQuarter == glm::three_over_two_pi<float>())
-                {
-                    currentQuarter = 0.0f;
-                    dynamidRotationAngle = 0.0f;
-                }
-                for (auto i = 0; i < cylinderNumber; ++i)
-                {
-					const auto destinationAngle = currentQuarter + glm::half_pi<float>();
-					const auto heightAngle = distribution(generator);
-					const auto newPosition = glm::vec3(glm::cos(destinationAngle) * sphereRadius, sphereRadius * glm::sin(heightAngle), glm::sin(destinationAngle));
-
-					const auto rotationAngle = glm::dot(currentCylinderPosition[i], newPosition) / (sphereRadius * sphereRadius);
-					yVelocities[i] = (newPosition.y - currentCylinderPosition.y) / 2.0f;
-					
-                }
+                dynamidRotationAngle += glm::quarter_pi<float>() * deltaTime;
             }
             else
             {
-                isQuarterChanged = false;
+                dynamidRotationAngle = 0.0f;
             }
 
             // Mason all-seeing eye
