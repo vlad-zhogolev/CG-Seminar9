@@ -238,43 +238,91 @@ int main()
         { // Seminar scene contents
             // Boxes
             glm::mat4 model = glm::mat4{};
-            glm::mat4 moveCubeUp = glm::translate(model, glm::vec3(0.5f, 0.5f, 0.0f));
+            glm::mat4 moveCubeUp = glm::translate(model, glm::vec3(0.5f, 0.5f, -0.6f));
             basicLighting.setMat4("model", moveCubeUp);
             renderSeminarCube();
 
-            glm::mat4 moveSecondCube = glm::translate(model, glm::vec3(0.7f, 0.5f, 1.4f));
+            glm::mat4 moveSecondCube = glm::translate(model, glm::vec3(0.7f, 0.5f, 0.8f));
             basicLighting.setMat4("model", moveSecondCube);
             renderSeminarCube();
 
-            glm::mat4 moveThirdCube = glm::translate(model, glm::vec3(-0.6f, 0.5f, 0.2f));
+            glm::mat4 moveThirdCube = glm::translate(model, glm::vec3(-0.6f, 0.5f, -0.4f));
             basicLighting.setMat4("model", moveThirdCube);
             renderSeminarCube();
 
-            glm::mat4 moveFourthCube = glm::translate(model, glm::vec3(-0.7f, 0.5f, 1.3f));
+            glm::mat4 moveFourthCube = glm::translate(model, glm::vec3(-0.7f, 0.5f, 0.7f));
             basicLighting.setMat4("model", moveFourthCube);
             renderSeminarCube();
 
-            glm::mat4 moveFifthCube = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.6f));
+            glm::mat4 moveFifthCube = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.0f));
             basicLighting.setMat4("model", moveFifthCube);
             renderSeminarCube();
 
             glm::mat4 pyramidModel = glm::mat4{};
-            pyramidModel = glm::translate(pyramidModel, glm::vec3(0.0f, 2.75, 0.6f));
+            pyramidModel = glm::translate(pyramidModel, glm::vec3(0.0f, 2.75, 0.0f));
 
-            static float dynamidRotationAngle = 0;
-            const int cylinderNumber = 8;
-        
-            if (dynamidRotationAngle < glm::two_pi<float>())
+            static float dynamicRotationAngle = 0;
+            static float currentQuarter = 0;
+            static bool isQuarterChanged = false;
+            const auto cylinderNumber = 8;
+            const float sphereRadius = 3;
+            
+            std::random_device randomDevice;  //Will be used to obtain a seed for the random number engine
+            std::mt19937 generator(randomDevice()); //Standard mersenne_twister_engine seeded with rd()
+            std::uniform_real_distribution<> distribution(-glm::quarter_pi<float>(), glm::quarter_pi<float>());
+            
+            static std::array<glm::vec3, cylinderNumber> currentCylinderPosition;
+            static std::array<glm::vec3, cylinderNumber> destinationCylinderPosition;
+            static std::array<float, cylinderNumber> yVelocities;
+			static std::array<float, cylinderNumber> currentCylinderHeight;
+			static bool isHeightInitialized = false;
+			if (!isHeightInitialized)
+			{
+				isHeightInitialized = true;
+				for (auto i = 0; i < cylinderNumber; ++i)
+				{
+					currentCylinderHeight[i] = 0.0f;
+				}
+			}
+  
+            dynamicRotationAngle += glm::quarter_pi<float>() * deltaTime;
+            if (dynamicRotationAngle - currentQuarter > glm::half_pi<float>())
             {
-                dynamidRotationAngle += glm::quarter_pi<float>() * deltaTime;
+                if (currentQuarter == 0.0f)
+                {
+                    currentQuarter = glm::half_pi<float>();
+                }
+                else if (currentQuarter == glm::half_pi<float>())
+                {
+                    currentQuarter = glm::pi<float>();
+                }
+                else if (currentQuarter == glm::pi<float>())
+                {
+                    currentQuarter = glm::three_over_two_pi<float>();
+                }
+                else if (currentQuarter == glm::three_over_two_pi<float>())
+                {
+                    currentQuarter = 0.0f;
+                    dynamicRotationAngle = 0.0f;
+                }
+                for (auto i = 0; i < cylinderNumber; ++i)
+                {
+                    const auto destinationAngle = currentQuarter + glm::half_pi<float>();
+                    const auto heightAngle = distribution(generator);
+                    const auto newPosition = glm::vec3(glm::cos(destinationAngle) * sphereRadius, sphereRadius * glm::sin(heightAngle), glm::sin(destinationAngle));
+                    
+                    const auto rotationAngle = glm::dot(currentCylinderPosition[i], newPosition) / (sphereRadius * sphereRadius);
+                    yVelocities[i] = (newPosition.y - currentCylinderPosition[i].y) / 4.0f;
+                }
             }
             else
             {
-                dynamidRotationAngle = 0.0f;
+                isQuarterChanged = false;
             }
 
+
             // Mason all-seeing eye
-            pyramidModel = glm::rotate(pyramidModel, dynamidRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+            pyramidModel = glm::rotate(pyramidModel, dynamicRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
             basicLighting.setMat4("model", pyramidModel);
             renderSeminarPyramid();
 
@@ -283,19 +331,24 @@ int main()
             for (auto i = 0; i < cylinderNumber; ++i)
             {
                 auto cylinderModel = glm::mat4{};
-
+				currentCylinderHeight[i] += yVelocities[i] * deltaTime;
                 const auto startRotationAngle = i * glm::two_pi<float>() / static_cast<float>(cylinderNumber);
                 // Set rotation around global Y axis
                 cylinderModel = glm::rotate(cylinderModel, startRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-                cylinderModel = glm::rotate(cylinderModel, -dynamidRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+                cylinderModel = glm::rotate(cylinderModel, -dynamicRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
                 // Translate cylinder by the height and radius of circle of cylinders
-                cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, 2.0f, 3.0f));
+                cylinderModel = glm::translate(cylinderModel, glm::vec3(0.0f, currentCylinderHeight[i] + 2.0f , 3.0f));
                 // Put object on the side and scale it
                 cylinderModel = glm::rotate(cylinderModel, glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
                 cylinderModel = glm::scale(cylinderModel, glm::vec3(0.5f, 1.0f, 0.5f));
                 // Rotate around object's Y axis (simulate wheel movement)
-                cylinderModel = glm::rotate(cylinderModel, -dynamidRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+                cylinderModel = glm::rotate(cylinderModel, -dynamicRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
 
+				currentCylinderPosition[i] = glm::vec3(
+					glm::cos(startRotationAngle - dynamicRotationAngle),
+					currentCylinderHeight[i],
+					glm::sin(startRotationAngle - dynamicRotationAngle)
+				);
                 basicLighting.setMat4("model", cylinderModel);
                 renderSeminarCylinder();
             }
