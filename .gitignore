@@ -42,9 +42,7 @@ ipch
 *.log
 
 # Project specific files and directories
-LightData.txt
 LightDataExample.txt
-ModelData.txt
 ModelDataFull.txt
 glad.c
 stb_image.h

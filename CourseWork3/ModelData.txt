@@ -1,0 +1,12 @@
+4 2 0 
+0 0 0
+1 1 1
+models/rusty_ball/ball.obj
+-7 2 0
+0 0 0
+1 1 1
+models/glass_ball/ball.obj
+-5 2 0
+0 0 0
+1 1 1
+models/transparent_ball/ball.obj
