@@ -32,11 +32,13 @@ void renderCube();
 void renderSeminarCube();
 void renderSeminarPyramid();
 void renderSeminarCylinder();
+void renderPhotoCube();
 void renderPyramid();
 void renderQuad();
 void renderSkybox(unsigned int cubemapTexture);
 unsigned int loadCubemap(std::vector<std::string> faces);
 unsigned int loadTexture(char const * path);
+void ConfigureBuffers(GLuint& VAO, GLuint& VBO, std::vector<float>& vertices);
 
 // Screen settings
 unsigned int screenWidth = 1200;
@@ -114,6 +116,7 @@ int main()
     Shader shaderLightBox("shaders/deferred_light_box.vert", "shaders/deferred_light_box.frag");
     Shader skyboxShader("shaders/skybox.vert", "shaders/skybox.frag");
     Shader basicLighting("shaders/basic_lighting.vert", "shaders/basic_lighting.frag");
+	Shader photoCubeShader("shaders/photoCube.vert", "shaders/photoCube.frag");
     
     // Load scene   
     SceneLoader sceneLoader;
@@ -172,6 +175,10 @@ int main()
 
     basicLighting.use();
     basicLighting.setInt("diffuse", 0);
+
+	photoCubeShader.use();
+	photoCubeShader.setInt("firstTexture", 0);
+	photoCubeShader.setInt("secondTexture", 1);
 
     glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     // Render loop    
@@ -263,7 +270,6 @@ int main()
 
             static float dynamicRotationAngle = 0;
             static float currentQuarter = 0;
-            static bool isQuarterChanged = false;
             const auto cylinderNumber = 8;
             const float sphereRadius = 3;
             
@@ -315,11 +321,6 @@ int main()
                     yVelocities[i] = (newPosition.y - currentCylinderPosition[i].y) / 4.0f;
                 }
             }
-            else
-            {
-                isQuarterChanged = false;
-            }
-
 
             // Mason all-seeing eye
             pyramidModel = glm::rotate(pyramidModel, dynamicRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -352,6 +353,45 @@ int main()
                 basicLighting.setMat4("model", cylinderModel);
                 renderSeminarCylinder();
             }
+
+			// Photo cube
+            static float alpha = 0;
+            static bool isAlphaIncreasing = true;
+			const static float fullTextureSwapTime = 2.0; // time in seconds
+            if (isAlphaIncreasing)
+            {
+                alpha += deltaTime / fullTextureSwapTime;
+                if (alpha > 1.0f)
+                {
+                    //alpha = 2.0f - alpha; // We do not lose accumulated value
+					glm::clamp(alpha, 0.0f, 1.0f);
+                    isAlphaIncreasing = false;
+                }
+            }
+            else
+            {
+                alpha -= deltaTime / fullTextureSwapTime;
+                if (alpha < 0.0f)
+                {
+                    //alpha = -alpha; // We do not lose accumulated value
+					glm::clamp(alpha, 0.0f, 1.0f);
+                    isAlphaIncreasing = true;
+                }
+            }
+
+			photoCubeShader.use();
+			photoCubeShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+			photoCubeShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+			photoCubeShader.setVec3("lightPos", lightPos);
+			photoCubeShader.setVec3("viewPos", camera.Position);
+			photoCubeShader.setMat4("projection", projection);
+			photoCubeShader.setMat4("view", view);
+            photoCubeShader.setFloat("alpha", alpha);
+            auto photoCubeModel = glm::mat4{};
+			photoCubeModel = glm::translate(photoCubeModel, glm::vec3(0.f, 5.f, 0.f));
+            photoCubeShader.setMat4("model", photoCubeModel);
+            renderPhotoCube();
+
         } // End of seminar scene contents
 
         // Render lights on top of scene        
@@ -763,6 +803,114 @@ void renderSeminarCube()
     glBindVertexArray(seminarCubeVAO);
     glBindTexture(GL_TEXTURE_2D, seminarCubeTexture);
     glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+}
+
+unsigned int firstPhotoCubeVAO = 0;
+unsigned int firsthotoCubeVBO = 0;
+unsigned int secondPhotoCubeVAO = 0;
+unsigned int secondhotoCubeVBO = 0;
+unsigned int thirdPhotoCubeVAO = 0;
+unsigned int thirdhotoCubeVBO = 0;
+unsigned int PhotoCubeTexture1 = 0;
+unsigned int PhotoCubeTexture2 = 0;
+unsigned int PhotoCubeTexture3 = 0;
+unsigned int PhotoCubeTexture4 = 0;
+unsigned int PhotoCubeTexture5 = 0;
+unsigned int PhotoCubeTexture6 = 0;
+
+void renderPhotoCube()
+{
+    if (firstPhotoCubeVAO == 0)
+    {
+        std::vector<float> firstVertices 
+        {
+             // coordinates            // normals               // texture coordinates
+             0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  1.0f,
+             0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 0.0f,  1.0f,
+             0.5f,  0.5f, -0.5f, /**/  0.0f,  0.0f, -1.0f, /**/ 1.0f,  1.0f,
+                                 /**/                      /**/
+            -0.5f, -0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 0.0f,  0.0f,
+             0.5f, -0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 1.0f,  0.0f,
+             0.5f,  0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 1.0f,  1.0f,
+             0.5f,  0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 1.0f,  1.0f,
+            -0.5f,  0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 0.0f,  1.0f,
+            -0.5f, -0.5f,  0.5f, /**/  0.0f,  0.0f,  1.0f, /**/ 0.0f,  0.0f,
+        };
+        std::vector<float> secondVertices
+        {
+            -0.5f,  0.5f,  0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 1.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 1.0f,  1.0f,
+            -0.5f, -0.5f, -0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 0.0f,  1.0f,
+            -0.5f, -0.5f, -0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 0.0f,  1.0f,
+            -0.5f, -0.5f,  0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 0.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f, /**/ -1.0f,  0.0f,  0.0f, /**/ 1.0f,  0.0f,
+                                 /**/                      /**/
+             0.5f,  0.5f, -0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 1.0f,  1.0f,
+             0.5f,  0.5f,  0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 1.0f,  0.0f,
+             0.5f, -0.5f,  0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 0.0f,  0.0f,
+             0.5f, -0.5f,  0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 0.0f,  0.0f,
+             0.5f, -0.5f, -0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 0.0f,  1.0f,
+             0.5f,  0.5f, -0.5f, /**/  1.0f,  0.0f,  0.0f, /**/ 1.0f,  1.0f,
+        };
+        std::vector<float> thirdVertices
+        {
+            -0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f,  1.0f,
+             0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f,  1.0f,
+             0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f,  0.0f,
+             0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 1.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, /**/  0.0f, -1.0f,  0.0f, /**/ 0.0f,  1.0f,
+                                 /**/                      /**/
+            -0.5f,  0.5f, -0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 0.0f,  1.0f,
+            -0.5f,  0.5f,  0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 0.0f,  0.0f,
+             0.5f,  0.5f,  0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 1.0f,  0.0f,
+             0.5f,  0.5f,  0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 1.0f,  0.0f,
+             0.5f,  0.5f, -0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 1.0f,  1.0f,
+            -0.5f,  0.5f, -0.5f, /**/  0.0f,  1.0f,  0.0f, /**/ 0.0f,  1.0f
+        };
+
+        ConfigureBuffers(firstPhotoCubeVAO, firsthotoCubeVBO, firstVertices);
+        ConfigureBuffers(secondPhotoCubeVAO, secondhotoCubeVBO, secondVertices);
+        ConfigureBuffers(thirdPhotoCubeVAO, thirdhotoCubeVBO, thirdVertices);
+
+        PhotoCubeTexture1 = loadTexture("textures/photoCube/1.png");
+        PhotoCubeTexture2 = loadTexture("textures/photoCube/2.png");
+        PhotoCubeTexture3 = loadTexture("textures/photoCube/3.png");
+        PhotoCubeTexture4 = loadTexture("textures/photoCube/4.png");
+        PhotoCubeTexture5 = loadTexture("textures/photoCube/5.png");
+        PhotoCubeTexture6 = loadTexture("textures/photoCube/6.png");
+    }
+    // render Cube
+    glBindVertexArray(firstPhotoCubeVAO);
+	glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, PhotoCubeTexture1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, PhotoCubeTexture2);
+    glDrawArrays(GL_TRIANGLES, 0, 12);
+
+	glBindVertexArray(secondPhotoCubeVAO);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, PhotoCubeTexture3);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, PhotoCubeTexture4);
+	glDrawArrays(GL_TRIANGLES, 0, 12);
+
+	glBindVertexArray(thirdPhotoCubeVAO);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, PhotoCubeTexture5);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, PhotoCubeTexture6);
+	glDrawArrays(GL_TRIANGLES, 0, 12);
+
+	// reset state to default
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, 0);
     glBindVertexArray(0);
 }
 
